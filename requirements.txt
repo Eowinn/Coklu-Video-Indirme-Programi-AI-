@@ -1,0 +1,4 @@
+# YT Storm Dependencies
+flask>=2.3.0
+yt-dlp>=2024.1.0
+pywebview>=4.0.0
