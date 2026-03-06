@@ -14,7 +14,11 @@ from flask import Flask, request, jsonify, render_template
 
 from .config import config
 from .job_manager import job_manager
+from .downloader import Downloader
 from .utils import open_folder
+
+# Global downloader instance for preview
+_downloader = Downloader()
 
 
 def create_app() -> Flask:
@@ -60,6 +64,22 @@ def create_app() -> Flask:
         success = open_folder(directory)
         return jsonify({"ok": success})
     
+    @app.route("/preview", methods=["POST"])
+    def preview_video():
+        """Video önizleme bilgilerini getir."""
+        data = request.get_json()
+        url = data.get("url", "").strip()
+        
+        if not url:
+            return jsonify({"ok": False, "error": "URL boş"})
+        
+        preview = _downloader.get_video_preview(url)
+        if preview and "error" not in preview:
+            return jsonify({"ok": True, "preview": preview})
+        else:
+            error = preview.get("error", "Bilgi alınamadı") if preview else "Bilgi alınamadı"
+            return jsonify({"ok": False, "error": error})
+    
     @app.route("/start", methods=["POST"])
     def start_download():
         """İndirme başlat."""
@@ -70,6 +90,8 @@ def create_app() -> Flask:
         is_playlist = data.get("is_playlist", False)
         pl_start = data.get("pl_start", "")
         pl_end = data.get("pl_end", "")
+        download_subs = data.get("download_subtitles", False)
+        sub_lang = data.get("subtitle_lang", "tr,en")
         
         if not urls:
             return jsonify({"ok": False, "error": "URL listesi boş"})
@@ -82,7 +104,7 @@ def create_app() -> Flask:
             # İndirmeyi ayrı thread'de başlat
             thread = threading.Thread(
                 target=job_manager.start_download,
-                args=(job_id, quality, out_dir, is_playlist, pl_start, pl_end),
+                args=(job_id, quality, out_dir, is_playlist, pl_start, pl_end, download_subs, sub_lang),
                 daemon=True
             )
             thread.start()

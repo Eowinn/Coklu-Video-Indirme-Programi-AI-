@@ -16,6 +16,8 @@ window.onload = async () => {
   document.getElementById('out-dir').value = d.dir;
   document.getElementById('sb-dir').textContent = d.dir;
   startPolling();
+  initDragDrop();
+  initSubtitleToggle();
 };
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -64,6 +66,9 @@ async function startDownload() {
     urls = [u];
   }
 
+  const downloadSubs = document.getElementById('download-subs')?.checked || false;
+  const subLang = document.getElementById('subtitle-lang')?.value?.trim() || 'tr,en';
+  
   const payload = {
     urls,
     quality: selQuality,
@@ -71,6 +76,8 @@ async function startDownload() {
     is_playlist: currentTab === 'playlist',
     pl_start: document.getElementById('pl-start')?.value?.trim() || '',
     pl_end: document.getElementById('pl-end')?.value?.trim() || '',
+    download_subtitles: downloadSubs,
+    subtitle_lang: subLang,
   };
 
   btn.disabled = true;
@@ -200,4 +207,166 @@ function toast(msg, type='ok') {
   el.className = 'show ' + type;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.className = '', 3200);
+}
+
+// ─── Drag & Drop ──────────────────────────────────────────────────────────────
+function initDragDrop() {
+  const dropZone = document.getElementById('drop-zone');
+  if (!dropZone) return;
+  
+  // Prevent default drag behaviors
+  ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, preventDefaults, false);
+    document.body.addEventListener(eventName, preventDefaults, false);
+  });
+  
+  // Highlight drop zone
+  ['dragenter', 'dragover'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.add('drag-over'), false);
+  });
+  
+  ['dragleave', 'drop'].forEach(eventName => {
+    dropZone.addEventListener(eventName, () => dropZone.classList.remove('drag-over'), false);
+  });
+  
+  // Handle drop
+  dropZone.addEventListener('drop', handleDrop, false);
+  
+  // Click to paste from clipboard
+  dropZone.addEventListener('click', async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      if (text && isValidUrl(text)) {
+        document.getElementById('single-url').value = text.trim();
+        toast('URL yapıştırıldı!', 'ok');
+        previewVideo();
+      }
+    } catch(e) {
+      // Clipboard access denied
+    }
+  });
+}
+
+function preventDefaults(e) {
+  e.preventDefault();
+  e.stopPropagation();
+}
+
+function handleDrop(e) {
+  const dt = e.dataTransfer;
+  const text = dt.getData('text/plain') || dt.getData('text/uri-list');
+  
+  if (text && isValidUrl(text)) {
+    document.getElementById('single-url').value = text.trim();
+    toast('URL eklendi!', 'ok');
+    previewVideo();
+  } else {
+    toast('Geçerli bir URL değil', 'err');
+  }
+}
+
+function isValidUrl(string) {
+  try {
+    const url = new URL(string);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch (_) {
+    return false;
+  }
+}
+
+// ─── Video Preview ────────────────────────────────────────────────────────────
+let previewTimeout;
+
+function onUrlChange(value) {
+  clearTimeout(previewTimeout);
+  if (value && isValidUrl(value)) {
+    previewTimeout = setTimeout(() => previewVideo(), 500);
+  }
+}
+
+async function previewVideo() {
+  const url = document.getElementById('single-url').value.trim();
+  if (!url || !isValidUrl(url)) return;
+  
+  const container = document.getElementById('video-preview');
+  const loading = container.querySelector('.preview-loading');
+  const content = container.querySelector('.preview-content');
+  
+  container.classList.remove('hidden');
+  loading.classList.remove('hidden');
+  content.classList.add('hidden');
+  
+  try {
+    const res = await fetch('/preview', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url})
+    });
+    const data = await res.json();
+    
+    if (data.ok && data.preview) {
+      const p = data.preview;
+      
+      document.getElementById('preview-thumb').src = p.thumbnail || '';
+      document.getElementById('preview-title').textContent = p.title;
+      document.getElementById('preview-channel').textContent = p.channel;
+      document.getElementById('preview-duration').textContent = p.duration_string || formatDuration(p.duration);
+      document.getElementById('preview-views').textContent = formatViews(p.view_count);
+      
+      // Subtitles info
+      const subsEl = document.getElementById('preview-subs');
+      const subsTextEl = document.getElementById('preview-subs-text');
+      if (p.subtitles && p.subtitles.length > 0) {
+        subsEl.classList.remove('hidden');
+        subsTextEl.textContent = `Altyazı: ${p.subtitles.slice(0, 5).join(', ')}${p.subtitles.length > 5 ? '...' : ''}`;
+      } else {
+        subsEl.classList.add('hidden');
+      }
+      
+      loading.classList.add('hidden');
+      content.classList.remove('hidden');
+    } else {
+      closePreview();
+      toast(data.error || 'Önizleme yüklenemedi', 'err');
+    }
+  } catch(e) {
+    closePreview();
+    toast('Önizleme hatası', 'err');
+  }
+}
+
+function closePreview() {
+  document.getElementById('video-preview').classList.add('hidden');
+}
+
+function formatDuration(seconds) {
+  if (!seconds) return '';
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  if (h > 0) return `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  return `${m}:${s.toString().padStart(2,'0')}`;
+}
+
+function formatViews(count) {
+  if (!count) return '';
+  if (count >= 1000000) return (count / 1000000).toFixed(1) + 'M görüntüleme';
+  if (count >= 1000) return (count / 1000).toFixed(1) + 'K görüntüleme';
+  return count + ' görüntüleme';
+}
+
+// ─── Subtitle Toggle ──────────────────────────────────────────────────────────
+function initSubtitleToggle() {
+  const checkbox = document.getElementById('download-subs');
+  const langWrapper = document.getElementById('subtitle-lang-wrapper');
+  
+  if (checkbox && langWrapper) {
+    checkbox.addEventListener('change', () => {
+      if (checkbox.checked) {
+        langWrapper.classList.remove('hidden');
+      } else {
+        langWrapper.classList.add('hidden');
+      }
+    });
+  }
 }
