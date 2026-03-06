@@ -1,0 +1,108 @@
+name: Build Executables
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller flask yt-dlp pywebview
+      
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --name="YT-Storm" --onefile --windowed --icon=static/img/icon.ico --add-data="templates;templates" --add-data="static;static" run.py
+      
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YT-Storm-Windows
+          path: dist/YT-Storm.exe
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller flask yt-dlp pywebview
+      
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --name="YT-Storm" --onefile --windowed --add-data="templates:templates" --add-data="static:static" run.py
+      
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YT-Storm-macOS
+          path: dist/YT-Storm
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller flask yt-dlp pywebview
+      
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller --name="YT-Storm" --onefile --add-data="templates:templates" --add-data="static:static" run.py
+      
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: YT-Storm-Linux
+          path: dist/YT-Storm
+
+  release:
+    needs: [build-windows, build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            YT-Storm-Windows/YT-Storm.exe
+            YT-Storm-macOS/YT-Storm
+            YT-Storm-Linux/YT-Storm
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
