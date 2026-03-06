@@ -100,7 +100,44 @@
             <div class="dl-panel active" id="tab-single">
               <div class="field">
                 <div class="field-label">Video URL <span class="badge">ZORUNLU</span></div>
-                <input type="url" id="single-url" placeholder="https://www.youtube.com/watch?v=..." />
+                <div class="url-input-wrapper">
+                  <input type="url" id="single-url" placeholder="https://www.youtube.com/watch?v=..." onchange="onUrlChange(this.value)" />
+                  <button class="btn-preview" onclick="previewVideo()" title="Önizle">👁</button>
+                </div>
+              </div>
+              
+              <!-- Video Preview -->
+              <div id="video-preview" class="video-preview hidden">
+                <div class="preview-loading">
+                  <div class="loading-spinner"></div>
+                  <span>Video bilgileri yükleniyor...</span>
+                </div>
+                <div class="preview-content hidden">
+                  <img id="preview-thumb" class="preview-thumbnail" src="" alt="Thumbnail" />
+                  <div class="preview-info">
+                    <h3 id="preview-title" class="preview-title"></h3>
+                    <div class="preview-meta">
+                      <span id="preview-channel" class="preview-channel"></span>
+                      <span class="preview-sep">•</span>
+                      <span id="preview-duration" class="preview-duration"></span>
+                      <span class="preview-sep">•</span>
+                      <span id="preview-views" class="preview-views"></span>
+                    </div>
+                    <div id="preview-subs" class="preview-subs hidden">
+                      <span class="subs-icon">📝</span>
+                      <span id="preview-subs-text"></span>
+                    </div>
+                  </div>
+                  <button class="preview-close" onclick="closePreview()">✕</button>
+                </div>
+              </div>
+              
+              <!-- Drag & Drop Zone -->
+              <div id="drop-zone" class="drop-zone">
+                <div class="drop-zone-content">
+                  <span class="drop-icon">📋</span>
+                  <span class="drop-text">URL'yi buraya sürükle bırak</span>
+                </div>
               </div>
             </div>
 
@@ -135,7 +172,7 @@
         <!-- Kalite -->
         <div class="panel-box">
           <div class="panel-head">
-            <div class="panel-head-title"><div class="dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div> Kalite &amp; Format</div>
+            <div class="panel-head-title"><div class="dot" style="background:var(--info);box-shadow:0 0 6px var(--info)"></div> Kalite &amp; Format</div>
           </div>
           <div class="panel-body">
             <div class="quality-grid" id="quality-grid">
@@ -145,6 +182,19 @@
               <button class="q-btn" onclick="selQ(this,'480')">480p</button>
               <button class="q-btn" onclick="selQ(this,'360')">360p</button>
               <button class="q-btn" onclick="selQ(this,'audio')">🎵 Yalnızca Ses · MP3</button>
+            </div>
+            
+            <!-- Altyazı Seçenekleri -->
+            <div class="subtitle-options">
+              <label class="checkbox-wrapper">
+                <input type="checkbox" id="download-subs" />
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-label">📝 Altyazı İndir</span>
+              </label>
+              <div id="subtitle-lang-wrapper" class="subtitle-lang-wrapper hidden">
+                <input type="text" id="subtitle-lang" value="tr,en" placeholder="tr,en,de" />
+                <span class="subtitle-hint">Virgülle ayrılmış dil kodları</span>
+              </div>
             </div>
           </div>
         </div>

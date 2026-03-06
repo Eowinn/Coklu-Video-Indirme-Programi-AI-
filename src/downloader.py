@@ -17,6 +17,8 @@ class DownloadOptions:
     is_playlist: bool = False
     playlist_start: Optional[int] = None
     playlist_end: Optional[int] = None
+    download_subtitles: bool = False
+    subtitle_lang: str = "tr,en"  # Virgülle ayrılmış dil kodları
 
 
 class Downloader:
@@ -106,6 +108,14 @@ class Downloader:
             if options.playlist_end:
                 ydl_opts["playlistend"] = options.playlist_end
         
+        # Altyazı indirme
+        if options.download_subtitles:
+            langs = [l.strip() for l in options.subtitle_lang.split(",")]
+            ydl_opts["writesubtitles"] = True
+            ydl_opts["writeautomaticsub"] = True
+            ydl_opts["subtitleslangs"] = langs
+            ydl_opts["subtitlesformat"] = "srt/best"
+        
         return ydl_opts
     
     def download(
@@ -120,13 +130,49 @@ class Downloader:
             info = ydl.extract_info(options.url, download=True)
             return info
     
-    def get_info(self, url: str) -> Optional[Dict[str, Any]]:
+    def get_info(self, url: str, flat: bool = True) -> Optional[Dict[str, Any]]:
         """Video bilgilerini indir (video indirmeden)."""
         ydl_opts = {
             "quiet": True,
             "no_warnings": True,
-            "extract_flat": True,
+            "extract_flat": flat,
         }
         
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             return ydl.extract_info(url, download=False)
+    
+    def get_video_preview(self, url: str) -> Optional[Dict[str, Any]]:
+        """Video önizleme bilgilerini getir."""
+        ydl_opts = {
+            "quiet": True,
+            "no_warnings": True,
+            "skip_download": True,
+        }
+        
+        try:
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)
+                if not info:
+                    return None
+                
+                # Subtitles info
+                subtitles = info.get("subtitles", {})
+                auto_captions = info.get("automatic_captions", {})
+                available_subs = list(subtitles.keys()) + [f"{k} (auto)" for k in auto_captions.keys()]
+                
+                return {
+                    "id": info.get("id", ""),
+                    "title": info.get("title", "Başlık alınamadı"),
+                    "thumbnail": info.get("thumbnail", ""),
+                    "duration": info.get("duration", 0),
+                    "duration_string": info.get("duration_string", ""),
+                    "channel": info.get("channel", info.get("uploader", "")),
+                    "view_count": info.get("view_count", 0),
+                    "upload_date": info.get("upload_date", ""),
+                    "description": (info.get("description", "") or "")[:200],
+                    "subtitles": available_subs[:10],  # İlk 10 dil
+                    "has_subtitles": len(subtitles) > 0,
+                    "has_auto_captions": len(auto_captions) > 0,
+                }
+        except Exception as e:
+            return {"error": str(e)}

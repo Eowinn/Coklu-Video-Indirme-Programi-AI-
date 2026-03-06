@@ -118,6 +118,8 @@ class JobManager:
         is_playlist: bool = False,
         playlist_start: Optional[str] = None,
         playlist_end: Optional[str] = None,
+        download_subtitles: bool = False,
+        subtitle_lang: str = "tr,en",
     ) -> None:
         """İndirmeyi başlat (thread içinde çağrılmalı)."""
         job = self.get_job(job_id)
@@ -157,6 +159,8 @@ class JobManager:
                 is_playlist=is_playlist,
                 playlist_start=int(playlist_start) if playlist_start and playlist_start.isdigit() else None,
                 playlist_end=int(playlist_end) if playlist_end and playlist_end.isdigit() else None,
+                download_subtitles=download_subtitles,
+                subtitle_lang=subtitle_lang,
             )
             
             fmt, _ = self._downloader.get_format_string(quality)
