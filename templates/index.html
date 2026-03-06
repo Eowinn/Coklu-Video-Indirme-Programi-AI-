@@ -35,6 +35,12 @@
       <div class="nav-item" onclick="navTo('queue', this)">
         <span class="nav-icon">☰</span> Kuyruk &amp; Durum
       </div>
+      <div class="nav-item" onclick="navTo('history', this)">
+        <span class="nav-icon">📚</span> Geçmiş
+      </div>
+      <div class="nav-item" onclick="navTo('settings', this)">
+        <span class="nav-icon">⚙</span> Ayarlar
+      </div>
     </div>
 
     <div class="sidebar-divider"></div>
@@ -245,6 +251,148 @@
         </div>
 
       </div><!-- /page-queue -->
+
+      <!-- ── GEÇMİŞ SAYFASI ─────────────────────────────────────── -->
+      <div class="page" id="page-history">
+        
+        <div class="panel-box">
+          <div class="panel-head">
+            <div class="panel-head-title"><div class="dot" style="background:var(--info);box-shadow:0 0 6px var(--info)"></div> İndirme Geçmişi</div>
+            <div class="history-actions">
+              <input type="text" id="history-search" class="history-search" placeholder="Ara..." oninput="searchHistory()" />
+              <button class="btn btn-danger-ghost" onclick="clearAllHistory()">
+                Tümünü Temizle
+              </button>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:12px;">
+            <div id="history-stats" class="history-stats">
+              <div class="stat-card">
+                <span class="stat-number" id="stat-total">0</span>
+                <span class="stat-desc">Toplam İndirme</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number stat-success" id="stat-completed">0</span>
+                <span class="stat-desc">Başarılı</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number stat-error" id="stat-failed">0</span>
+                <span class="stat-desc">Başarısız</span>
+              </div>
+              <div class="stat-card">
+                <span class="stat-number stat-size" id="stat-size">0 MB</span>
+                <span class="stat-desc">Toplam Boyut</span>
+              </div>
+            </div>
+            
+            <div id="history-container" class="history-container">
+              <div class="empty-state">
+                <div class="empty-icon">📚</div>
+                <div class="empty-title">Henüz indirme yok</div>
+                <div class="empty-sub">İndirmeleriniz burada görünecek</div>
+              </div>
+            </div>
+            
+            <div id="history-pagination" class="history-pagination hidden">
+              <button class="btn btn-ghost" onclick="loadHistory(currentHistoryOffset - historyLimit)" id="prev-btn" disabled>← Önceki</button>
+              <span id="history-page-info" class="page-info">1 / 1</span>
+              <button class="btn btn-ghost" onclick="loadHistory(currentHistoryOffset + historyLimit)" id="next-btn" disabled>Sonraki →</button>
+            </div>
+          </div>
+        </div>
+        
+      </div><!-- /page-history -->
+
+      <!-- ── AYARLAR SAYFASI ─────────────────────────────────────── -->
+      <div class="page" id="page-settings">
+        
+        <div class="panel-box">
+          <div class="panel-head">
+            <div class="panel-head-title"><div class="dot" style="background:var(--warning);box-shadow:0 0 6px var(--warning)"></div> Uygulama Ayarları</div>
+          </div>
+          <div class="panel-body">
+            
+            <div class="settings-section">
+              <h3 class="settings-title">🎨 Görünüm</h3>
+              <div class="settings-row">
+                <label class="settings-label">Tema</label>
+                <select id="setting-theme" class="settings-select" onchange="saveSetting('theme', this.value)">
+                  <option value="dark">Karanlık</option>
+                  <option value="light">Aydınlık</option>
+                  <option value="system">Sistem</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3 class="settings-title">📥 İndirme</h3>
+              <div class="settings-row">
+                <label class="settings-label">Varsayılan Kalite</label>
+                <select id="setting-default_quality" class="settings-select" onchange="saveSetting('default_quality', this.value)">
+                  <option value="best">En Yüksek</option>
+                  <option value="1080">1080p</option>
+                  <option value="720">720p</option>
+                  <option value="480">480p</option>
+                  <option value="360">360p</option>
+                  <option value="audio">Yalnızca Ses</option>
+                </select>
+              </div>
+              <div class="settings-row">
+                <label class="settings-label">Eş Zamanlı İndirme</label>
+                <select id="setting-concurrent_downloads" class="settings-select" onchange="saveSetting('concurrent_downloads', parseInt(this.value))">
+                  <option value="1">1</option>
+                  <option value="2">2</option>
+                  <option value="3">3</option>
+                  <option value="5">5</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3 class="settings-title">📝 Altyazı</h3>
+              <div class="settings-row">
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" id="setting-download_subtitles" onchange="saveSetting('download_subtitles', this.checked)" />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-label">Varsayılan olarak altyazı indir</span>
+                </label>
+              </div>
+              <div class="settings-row">
+                <label class="settings-label">Varsayılan Diller</label>
+                <input type="text" id="setting-subtitle_lang" class="settings-input" placeholder="tr,en,de" onchange="saveSetting('subtitle_lang', this.value)" />
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3 class="settings-title">🌐 Ağ</h3>
+              <div class="settings-row">
+                <label class="settings-label">Proxy (opsiyonel)</label>
+                <input type="text" id="setting-proxy" class="settings-input" placeholder="http://proxy:port" onchange="saveSetting('proxy', this.value)" />
+              </div>
+            </div>
+            
+            <div class="settings-section">
+              <h3 class="settings-title">🔔 Diğer</h3>
+              <div class="settings-row">
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" id="setting-auto_preview" onchange="saveSetting('auto_preview', this.checked)" />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-label">URL girildiğinde otomatik önizle</span>
+                </label>
+              </div>
+              <div class="settings-row">
+                <label class="checkbox-wrapper">
+                  <input type="checkbox" id="setting-notifications" onchange="saveSetting('notifications', this.checked)" />
+                  <span class="checkbox-custom"></span>
+                  <span class="checkbox-label">İndirme tamamlandığında bildir</span>
+                </label>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+        
+      </div><!-- /page-settings -->
 
     </div><!-- /page-body -->
   </div><!-- /main -->
