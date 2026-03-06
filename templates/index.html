@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YT Storm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+
+<!-- ╔══ TITLEBAR ══╗ -->
+<div id="titlebar">
+  <div class="titlebar-logo">
+    <div class="titlebar-icon">⚡</div>
+    <span class="titlebar-name">YT Storm</span>
+  </div>
+  <span class="titlebar-sep">·</span>
+  <span class="titlebar-sub">YouTube Video İndirici</span>
+  <div class="titlebar-spacer"></div>
+  <span class="titlebar-ver">v2.0 · yt-dlp</span>
+</div>
+
+<!-- ╔══ LAYOUT ══╗ -->
+<div id="layout">
+
+  <!-- ╔══ SIDEBAR ══╗ -->
+  <nav id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Menü</div>
+      <div class="nav-item active" onclick="navTo('download', this)">
+        <span class="nav-icon">⬇</span> İndirme Ekle
+      </div>
+      <div class="nav-item" onclick="navTo('queue', this)">
+        <span class="nav-icon">☰</span> Kuyruk &amp; Durum
+      </div>
+    </div>
+
+    <div class="sidebar-divider"></div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">İpuçları</div>
+      <div style="padding:4px 8px 0; color:var(--muted); font-size:11px; line-height:1.7;">
+        Playlist indirmek için<br>
+        <span style="color:var(--text2)">Playlist / Kanal</span> sekmesini kullan.
+        <br><br>
+        FFmpeg yüklüyse<br>
+        <span style="color:var(--text2)">1080p+ kalite</span> desteklenir.
+      </div>
+    </div>
+
+    <div class="sidebar-stats">
+      <div class="sidebar-label" style="padding-bottom:4px;">Oturum İstatistikleri</div>
+      <div class="stat-row">
+        <span class="stat-label">Toplam</span>
+        <span class="stat-val" id="s-total">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Devam Eden</span>
+        <span class="stat-val active-color" id="s-running">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Tamamlanan</span>
+        <span class="stat-val done-color" id="s-done">0</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Hatalı</span>
+        <span class="stat-val err-color" id="s-err">0</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ╔══ MAIN ══╗ -->
+  <div id="main">
+    <div class="page-body">
+
+      <!-- ── İNDİRME SAYFASI ───────────────────────────────────── -->
+      <div class="page active" id="page-download">
+
+        <!-- Mod seçimi -->
+        <div class="panel-box">
+          <div class="panel-head">
+            <div class="panel-head-title"><div class="dot"></div> İndirme Modu</div>
+          </div>
+          <div class="panel-body">
+            <div class="mode-tabs">
+              <button class="mode-tab active" onclick="switchTab('single', this)">
+                ▶ Tekli Video
+              </button>
+              <button class="mode-tab" onclick="switchTab('bulk', this)">
+                ⊞ Toplu URL
+              </button>
+              <button class="mode-tab" onclick="switchTab('playlist', this)">
+                ☰ Playlist / Kanal
+              </button>
+            </div>
+
+            <!-- Tekli -->
+            <div class="dl-panel active" id="tab-single">
+              <div class="field">
+                <div class="field-label">Video URL <span class="badge">ZORUNLU</span></div>
+                <input type="url" id="single-url" placeholder="https://www.youtube.com/watch?v=..." />
+              </div>
+            </div>
+
+            <!-- Toplu -->
+            <div class="dl-panel" id="tab-bulk">
+              <div class="field">
+                <div class="field-label">URL Listesi <span class="badge">HER SATIRA BİR URL</span></div>
+                <textarea id="bulk-urls" placeholder="https://youtube.com/watch?v=aaa&#10;https://youtube.com/watch?v=bbb&#10;https://youtube.com/watch?v=ccc"></textarea>
+              </div>
+            </div>
+
+            <!-- Playlist -->
+            <div class="dl-panel" id="tab-playlist">
+              <div class="field">
+                <div class="field-label">Playlist veya Kanal URL</div>
+                <input type="url" id="playlist-url" placeholder="https://www.youtube.com/playlist?list=..." />
+              </div>
+              <div class="field-row">
+                <div class="field">
+                  <div class="field-label">Başlangıç sırası</div>
+                  <input type="text" id="pl-start" placeholder="1 (opsiyonel)" />
+                </div>
+                <div class="field">
+                  <div class="field-label">Bitiş sırası</div>
+                  <input type="text" id="pl-end" placeholder="Tümü (opsiyonel)" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Kalite -->
+        <div class="panel-box">
+          <div class="panel-head">
+            <div class="panel-head-title"><div class="dot" style="background:var(--blue);box-shadow:0 0 6px var(--blue)"></div> Kalite &amp; Format</div>
+          </div>
+          <div class="panel-body">
+            <div class="quality-grid" id="quality-grid">
+              <button class="q-btn" onclick="selQ(this,'best')">🔥 En Yüksek</button>
+              <button class="q-btn" onclick="selQ(this,'1080')">1080p</button>
+              <button class="q-btn sel" onclick="selQ(this,'720')">720p ★</button>
+              <button class="q-btn" onclick="selQ(this,'480')">480p</button>
+              <button class="q-btn" onclick="selQ(this,'360')">360p</button>
+              <button class="q-btn" onclick="selQ(this,'audio')">🎵 Yalnızca Ses · MP3</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Klasör + Başlat -->
+        <div class="panel-box">
+          <div class="panel-head">
+            <div class="panel-head-title"><div class="dot" style="background:var(--gold);box-shadow:0 0 6px var(--gold)"></div> Hedef Klasör</div>
+          </div>
+          <div class="panel-body">
+            <div class="field" style="margin-bottom:16px;">
+              <div class="field-inline">
+                <input type="text" id="out-dir" placeholder="Varsayılan klasör yükleniyor..." />
+                <button class="btn btn-ghost" onclick="openFolder()" title="Klasörü aç" style="padding:9px 14px;">📂</button>
+              </div>
+            </div>
+            <div class="btn-row">
+              <button class="btn btn-primary" id="dl-btn" onclick="startDownload()">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                İndirmeyi Başlat
+              </button>
+              <span class="btn-status" id="dl-status"></span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-download -->
+
+      <!-- ── KUYRUK SAYFASI ─────────────────────────────────────── -->
+      <div class="page" id="page-queue">
+
+        <div class="panel-box">
+          <div class="panel-head">
+            <div class="panel-head-title"><div class="dot"></div> Aktif Kuyruk</div>
+            <button class="btn btn-danger-ghost" onclick="clearDone()">
+              Tamamlananları Temizle
+            </button>
+          </div>
+          <div class="panel-body" style="padding:12px;">
+            <div id="jobs-container">
+              <div class="empty-state">
+                <div class="empty-icon">⬇</div>
+                <div class="empty-title">Kuyruk boş</div>
+                <div class="empty-sub">İndirme eklemek için sol menüden başlayın</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /page-queue -->
+
+    </div><!-- /page-body -->
+  </div><!-- /main -->
+
+</div><!-- /layout -->
+
+<!-- ╔══ STATUSBAR ══╗ -->
+<div id="statusbar">
+  <div class="sb-item"><div class="sb-dot"></div> Çalışıyor</div>
+  <div class="sb-item">yt-dlp güçlendirildi</div>
+  <div class="sb-spacer"></div>
+  <div class="sb-item" id="sb-dir" style="color:var(--muted); max-width:400px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></div>
+</div>
+
+<!-- ╔══ TOAST ══╗ -->
+<div id="toast"><span class="toast-icon" id="toast-icon"></span><span id="toast-msg"></span></div>
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
